@@ -4,7 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import Draggable from "react-draggable";
 import { SWATCHES } from "@/constants";
-import { RotateCcw, Calculator, Loader2 } from "lucide-react";
+import {
+  RotateCcw,
+  Calculator,
+  Loader2,
+  Undo2,
+  Redo2,
+  HelpCircle,
+  X,
+} from "lucide-react";
 // import {LazyBrush} from 'lazy-brush';
 
 interface GeneratedResult {
@@ -29,6 +37,17 @@ export default function Drawing() {
   const [latexExpression, setLatexExpression] = useState<Array<string>>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [history, setHistory] = useState<ImageData[]>([]);
+  const [historyStep, setHistoryStep] = useState(-1);
+  const historyStepRef = useRef(-1);
+
+  type ImageData = string;
+
+  // Keep ref in sync with historyStep state to avoid stale closures
+  useEffect(() => {
+    historyStepRef.current = historyStep;
+  }, [historyStep]);
 
   // const lazyBrush = new LazyBrush({
   //     radius: 10,
@@ -57,6 +76,8 @@ export default function Drawing() {
       setLatexExpression([]);
       setResult(undefined);
       setDictOfVars({});
+      setHistory([]);
+      setHistoryStep(-1);
       setTimeout(() => {
         setReset(false);
         setIsResetting(false);
@@ -106,6 +127,12 @@ export default function Drawing() {
         },
       });
     };
+
+    // Initialize history with empty canvas state
+    if (canvas && history.length === 0) {
+      setHistory([canvas.toDataURL()]);
+      setHistoryStep(0);
+    }
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
@@ -191,6 +218,65 @@ export default function Drawing() {
 
   const stopDrawing = () => {
     setIsDrawing(false);
+    // Save state to history after drawing ends
+    setTimeout(() => {
+      const canvas = canvasRef.current;
+      if (canvas) {
+        // Use ref to get the current historyStep value (avoids stale closure)
+        const currentStep = historyStepRef.current;
+        setHistory((prev) => {
+          // Truncate any "future" history states after current step
+          // This ensures undo works correctly by removing redo states when new drawing is made
+          const newHistory = prev.slice(0, currentStep + 1);
+          newHistory.push(canvas.toDataURL());
+          return newHistory;
+        });
+        setHistoryStep(currentStep + 1);
+      }
+    }, 0);
+  };
+
+  const undo = () => {
+    setHistoryStep((prev) => {
+      const newStep = Math.max(0, prev - 1);
+      setHistory((historyArray) => {
+        if (newStep >= 0 && newStep < historyArray.length) {
+          restoreFromHistory(historyArray[newStep]);
+        }
+        return historyArray;
+      });
+      return newStep;
+    });
+  };
+
+  const redo = () => {
+    setHistory((historyArray) => {
+      setHistoryStep((prev) => {
+        const newStep = Math.min(historyArray.length - 1, prev + 1);
+        if (newStep >= 0 && newStep < historyArray.length) {
+          restoreFromHistory(historyArray[newStep]);
+        }
+        return newStep;
+      });
+      return historyArray;
+    });
+  };
+
+  const restoreFromHistory = (imageDataUrl: string) => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.lineCap = "round";
+        ctx.lineWidth = 3;
+        const img = new Image();
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
+        };
+        img.src = imageDataUrl;
+      }
+    }
   };
 
   // const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -294,21 +380,44 @@ export default function Drawing() {
       {/* Top Toolbar */}
       <div className="absolute top-0 left-0 right-0 z-20 p-3">
         <div className="flex items-center justify-between gap-4 max-w-screen-xl mx-auto">
-          {/* Reset Button */}
-          <Button
-            onClick={() => setReset(true)}
-            disabled={isResetting}
-            className="bg-red-500/90 hover:bg-red-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-red-500/25 disabled:opacity-70"
-          >
-            {isResetting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RotateCcw className="w-4 h-4" />
-            )}
-            <span>{isResetting ? "Clearing..." : "Reset"}</span>
-          </Button>
+          {/* Left Section - Reset, Undo, Redo */}
+          <div className="flex items-center gap-2">
+            {/* Reset Button */}
+            <Button
+              onClick={() => setReset(true)}
+              disabled={isResetting}
+              className="bg-red-500/90 hover:bg-red-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-red-500/25 disabled:opacity-70"
+            >
+              {isResetting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RotateCcw className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">
+                {isResetting ? "Clearing..." : "Reset"}
+              </span>
+            </Button>
 
-          {/* Color Swatches */}
+            {/* Undo Button */}
+            <Button
+              onClick={undo}
+              disabled={historyStep <= 0}
+              className="bg-blue-500/90 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Undo2 className="w-4 h-4" />
+            </Button>
+
+            {/* Redo Button */}
+            <Button
+              onClick={redo}
+              disabled={historyStep >= history.length - 1}
+              className="bg-blue-500/90 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-blue-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Redo2 className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {/* Center Section - Color Swatches */}
           <Group className="bg-slate-800/80 backdrop-blur-sm rounded-xl flex items-center justify-center flex-wrap gap-2 p-2 shadow-lg">
             {SWATCHES.map((swatch) => (
               <ColorSwatch
@@ -325,21 +434,91 @@ export default function Drawing() {
             ))}
           </Group>
 
-          {/* Calculate Button */}
-          <Button
-            onClick={runRoute}
-            disabled={isCalculating}
-            className="bg-green-500/90 hover:bg-green-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-green-500/25 disabled:opacity-70"
-          >
-            {isCalculating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Calculator className="w-4 h-4" />
-            )}
-            <span>{isCalculating ? "Processing..." : "Calculate"}</span>
-          </Button>
+          {/* Right Section - Calculate, Guide */}
+          <div className="flex items-center gap-2">
+            {/* Calculate Button */}
+            <Button
+              onClick={runRoute}
+              disabled={isCalculating}
+              className="bg-green-500/90 hover:bg-green-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-green-500/25 disabled:opacity-70"
+            >
+              {isCalculating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Calculator className="w-4 h-4" />
+              )}
+              <span className="hidden sm:inline">
+                {isCalculating ? "Processing..." : "Calculate"}
+              </span>
+            </Button>
+
+            {/* Guide Button */}
+            <Button
+              onClick={() => setShowGuide(!showGuide)}
+              className="bg-purple-500/90 hover:bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-purple-500/25"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Guide Card */}
+      {showGuide && (
+        <div className="absolute top-20 right-4 z-30 w-80 max-h-96 overflow-y-auto bg-slate-900/95 backdrop-blur-sm border border-purple-500/30 rounded-xl p-5 shadow-2xl animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-purple-400" />
+              How to Use
+            </h2>
+            <button
+              onClick={() => setShowGuide(false)}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="space-y-3 text-sm text-gray-300">
+            <div>
+              <p className="font-semibold text-purple-300 mb-1">✏️ Drawing</p>
+              <p>
+                Click and drag on the canvas to write mathematical equations or
+                expressions.
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-blue-300 mb-1">🎨 Colors</p>
+              <p>Click on the color swatches to change your drawing color.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-blue-300 mb-1">↩️ Undo/Redo</p>
+              <p>
+                Use the Undo and Redo buttons to navigate through your drawing
+                history.
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-green-300 mb-1">🧮 Calculate</p>
+              <p>
+                Click Calculate to send your drawing to the AI for analysis and
+                solving.
+              </p>
+            </div>
+            <div>
+              <p className="font-semibold text-red-300 mb-1">🗑️ Reset</p>
+              <p>Clear the entire canvas and start fresh.</p>
+            </div>
+            <div>
+              <p className="font-semibold text-yellow-300 mb-1">💡 Tips</p>
+              <ul className="list-disc list-inside space-y-1 ml-1">
+                <li>Write clearly for better accuracy</li>
+                <li>The results appear as draggable cards</li>
+                <li>Use variables to solve complex equations</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Canvas */}
       <canvas
