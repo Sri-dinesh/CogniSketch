@@ -1,50 +1,77 @@
-# React + TypeScript + Vite
+# CogniSketch - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An AI-powered drawing calculator that transforms your handwritten mathematical expressions into solved equations. Draw math problems on a canvas and let AI do the calculations for you.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Freehand Drawing Canvas** - Draw mathematical expressions naturally with mouse or touch
+- **AI-Powered Recognition** - Uses Google's Gemini AI to analyze and solve drawn expressions
+- **Multiple Color Swatches** - Choose from a variety of colors for drawing
+- **Undo/Redo Support** - Navigate through your drawing history
+- **Draggable Results** - Move calculation results anywhere on the canvas
+- **Variable Support** - Assign variables and use them in subsequent calculations
+- **Responsive Design** - Works on desktop and mobile devices
+- **Touch Support** - Full touch screen compatibility for tablets and phones
 
-## Expanding the ESLint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+- **React 18** - UI Framework
+- **TypeScript** - Type Safety
+- **Vite** - Build Tool & Dev Server
+- **Tailwind CSS** - Styling
+- **Mantine UI** - Component Library
+- **Axios** - HTTP Client
+- **React Router** - Navigation
+- **MathJax** - LaTeX Rendering
+- **Lucide React** - Icons
 
-- Configure the top-level `parserOptions` property like this:
+## 📦 Installation
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/cognisketch.git
+   cd cognisketch/CogniSketch
+   ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+3. **Set up environment variables**
+   
+   Create a `.env` file in the root directory:
+   ```env
+   VITE_API_URL=http://localhost:8900
+   ```
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+   The app will be available at `http://localhost:5173`
+
+
+## 🎨 How to Use
+
+1. **Navigate to the drawing canvas** by clicking "Start Drawing" on the landing page
+2. **Select a color** from the color swatches in the toolbar
+3. **Draw your mathematical expression** on the canvas
+4. **Click "Calculate"** to send your drawing to the AI for analysis
+5. **View the result** - it appears as a draggable card on the canvas
+6. **Use Undo/Redo** to navigate through your drawing history
+7. **Click Reset** to clear the canvas and start fresh
+
+## 🧮 Supported Calculations
+
+- **Basic Arithmetic**: `2 + 3 * 4`, `10 / 2 - 5`
+- **Algebraic Equations**: `x^2 + 2x + 1 = 0`
+- **Variable Assignment**: `x = 5`, `y = 10`
+- **Graphical Math Problems**: Word problems represented as drawings
+- **Abstract Concepts**: Drawings representing ideas or concepts
+
+
+## 🔗 Related
+
+- [CogniSketch Backend](../CogniSketch-Backend) - The FastAPI backend for this application
