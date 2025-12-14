@@ -12,18 +12,29 @@ import {
   Redo2,
   HelpCircle,
   X,
+  BookOpen,
+  ChevronRight,
 } from "lucide-react";
 // import {LazyBrush} from 'lazy-brush';
 
 interface GeneratedResult {
   expression: string;
   answer: string;
+  steps?: Step[];
+}
+
+interface Step {
+  step_number: number;
+  operation: string;
+  expression: string;
+  explanation: string;
 }
 
 interface Response {
   expr: string;
   result: string;
   assign: boolean;
+  steps?: Step[];
 }
 
 export default function Drawing() {
@@ -34,10 +45,11 @@ export default function Drawing() {
   const [dictOfVars, setDictOfVars] = useState({});
   const [result, setResult] = useState<GeneratedResult>();
   const [latexPosition, setLatexPosition] = useState({ x: 10, y: 200 });
-  const [latexExpression, setLatexExpression] = useState<Array<string>>([]);
+  const [latexExpression, setLatexExpression] = useState<string | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [showSolution, setShowSolution] = useState(false);
   const [history, setHistory] = useState<ImageData[]>([]);
   const [historyStep, setHistoryStep] = useState(-1);
   const historyStepRef = useRef(-1);
@@ -56,7 +68,7 @@ export default function Drawing() {
   // });
 
   useEffect(() => {
-    if (latexExpression.length > 0 && window.MathJax) {
+    if (latexExpression && window.MathJax) {
       setTimeout(() => {
         window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub]);
       }, 0);
@@ -64,20 +76,15 @@ export default function Drawing() {
   }, [latexExpression]);
 
   useEffect(() => {
-    if (result) {
-      renderLatexToCanvas(result.expression, result.answer);
-    }
-  }, [result]);
-
-  useEffect(() => {
     if (reset) {
       setIsResetting(true);
       resetCanvas();
-      setLatexExpression([]);
+      setLatexExpression(null);
       setResult(undefined);
       setDictOfVars({});
       setHistory([]);
       setHistoryStep(-1);
+      setShowSolution(false);
       setTimeout(() => {
         setReset(false);
         setIsResetting(false);
@@ -142,7 +149,8 @@ export default function Drawing() {
 
   const renderLatexToCanvas = (expression: string, answer: string) => {
     const latex = `\\(\\LARGE{${expression} = ${answer}}\\)`;
-    setLatexExpression([...latexExpression, latex]);
+    // Replace instead of append to prevent multiple blocks
+    setLatexExpression(latex);
 
     // Clear the main canvas
     const canvas = canvasRef.current;
@@ -359,14 +367,21 @@ export default function Drawing() {
         const centerY = (minY + maxY) / 2;
 
         setLatexPosition({ x: centerX, y: centerY });
-        resp.data.forEach((data: Response) => {
-          setTimeout(() => {
-            setResult({
-              expression: data.expr,
-              answer: data.result,
-            });
-          }, 1000);
-        });
+
+        // Process only the last result to avoid multiple blocks
+        const lastData = resp.data[resp.data.length - 1] as Response;
+        if (lastData) {
+          setResult({
+            expression: lastData.expr,
+            answer: lastData.result,
+            steps: lastData.steps,
+          });
+          renderLatexToCanvas(lastData.expr, lastData.result);
+          // Show solution panel if there are steps
+          if (lastData.steps && lastData.steps.length > 0) {
+            setShowSolution(true);
+          }
+        }
       } catch (error) {
         console.error("Error calculating:", error);
       } finally {
@@ -434,7 +449,7 @@ export default function Drawing() {
             ))}
           </Group>
 
-          {/* Right Section - Calculate, Guide */}
+          {/* Right Section - Calculate, Solution, Guide */}
           <div className="flex items-center gap-2">
             {/* Calculate Button */}
             <Button
@@ -451,6 +466,21 @@ export default function Drawing() {
                 {isCalculating ? "Processing..." : "Calculate"}
               </span>
             </Button>
+
+            {/* Solution Steps Button */}
+            {result && result.steps && result.steps.length > 0 && (
+              <Button
+                onClick={() => setShowSolution(!showSolution)}
+                className={`${
+                  showSolution
+                    ? "bg-emerald-600 hover:bg-emerald-700"
+                    : "bg-emerald-500/90 hover:bg-emerald-600"
+                } text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-emerald-500/25`}
+              >
+                <BookOpen className="w-4 h-4" />
+                <span className="hidden sm:inline">Steps</span>
+              </Button>
+            )}
 
             {/* Guide Button */}
             <Button
@@ -520,6 +550,70 @@ export default function Drawing() {
         </div>
       )}
 
+      {/* Step-by-Step Solution Panel */}
+      {showSolution && result && result.steps && result.steps.length > 0 && (
+        <Draggable handle=".solution-handle">
+          <div className="absolute top-20 left-4 z-30 w-96 max-h-[70vh] overflow-hidden bg-slate-900/95 backdrop-blur-sm border border-green-500/30 rounded-xl shadow-2xl animate-in fade-in slide-in-from-left-2">
+            {/* Header */}
+            <div className="solution-handle flex items-center justify-between p-4 border-b border-slate-700/50 cursor-move bg-gradient-to-r from-green-900/30 to-emerald-900/30">
+              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-green-400" />
+                Step-by-Step Solution
+              </h2>
+              <button
+                onClick={() => setShowSolution(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Problem Statement */}
+            <div className="p-4 bg-slate-800/50 border-b border-slate-700/50">
+              <p className="text-sm text-gray-400 mb-1">Problem:</p>
+              <p className="text-lg font-mono text-white">
+                {result.expression}
+              </p>
+            </div>
+
+            {/* Steps */}
+            <div className="overflow-y-auto max-h-[45vh] p-4 space-y-4">
+              {result.steps.map((step, index) => (
+                <div
+                  key={index}
+                  className="bg-slate-800/70 rounded-lg p-4 border-l-4 border-green-500/70 hover:bg-slate-800/90 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-green-500/20 text-green-400 text-xs font-bold px-2 py-1 rounded-full">
+                      Step {step.step_number}
+                    </span>
+                    <span className="text-sm font-medium text-blue-300">
+                      {step.operation}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <p className="font-mono text-white text-base bg-slate-900/50 px-3 py-2 rounded-md flex-1">
+                      {step.expression}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-400 italic ml-6">
+                    {step.explanation}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Final Answer */}
+            <div className="p-4 bg-gradient-to-r from-green-900/40 to-emerald-900/40 border-t border-green-500/30">
+              <p className="text-sm text-green-300 mb-1">✓ Solution:</p>
+              <p className="text-xl font-bold font-mono text-green-400">
+                {result.expression} = {result.answer}
+              </p>
+            </div>
+          </div>
+        </Draggable>
+      )}
       {/* Canvas */}
       <canvas
         ref={canvasRef}
@@ -534,18 +628,16 @@ export default function Drawing() {
         onTouchEnd={stopDrawing}
       />
 
-      {latexExpression &&
-        latexExpression.map((latex, index) => (
-          <Draggable
-            key={index}
-            defaultPosition={latexPosition}
-            onStop={(_, data) => setLatexPosition({ x: data.x, y: data.y })}
-          >
-            <div className="absolute p-3 text-white rounded-lg shadow-xl bg-slate-800/90 backdrop-blur-sm cursor-move">
-              <div className="latex-content">{latex}</div>
-            </div>
-          </Draggable>
-        ))}
+      {latexExpression && (
+        <Draggable
+          defaultPosition={latexPosition}
+          onStop={(_, data) => setLatexPosition({ x: data.x, y: data.y })}
+        >
+          <div className="absolute p-3 text-white rounded-lg shadow-xl bg-slate-800/90 backdrop-blur-sm cursor-move">
+            <div className="latex-content">{latexExpression}</div>
+          </div>
+        </Draggable>
+      )}
     </div>
   );
 }

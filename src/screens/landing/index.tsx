@@ -9,13 +9,13 @@ import {
   ArrowRight,
   Play,
   CheckCircle2,
-  MessageCircle,
   Users,
   Star,
   Github,
-  Twitter,
   Menu,
   X,
+  Instagram,
+  Twitch,
 } from "lucide-react";
 
 // ============================================
@@ -106,17 +106,18 @@ function AnimatedSketchSVG() {
       {/* Hand-drawn style math expression: 2+3 */}
       <g className="animate-draw-line" style={{ animationDelay: "0.5s" }}>
         <path
-          d="M 80 100 Q 85 95 90 100 Q 95 105 100 100 Q 105 95 110 100"
+          d="
+      M 80 90
+      Q 95 70 115 90
+      Q 120 100 105 110
+      L 85 120
+      L 120 120
+    "
           stroke="hsl(30, 10%, 25%)"
           strokeWidth="3"
           strokeLinecap="round"
+          strokeLinejoin="round"
           fill="none"
-        />
-        <path
-          d="M 95 85 L 95 115"
-          stroke="hsl(30, 10%, 25%)"
-          strokeWidth="3"
-          strokeLinecap="round"
         />
       </g>
 
@@ -205,7 +206,6 @@ function AnimatedSketchSVG() {
     </svg>
   );
 }
-
 
 // ============================================
 // FEATURE CARD COMPONENT
@@ -412,7 +412,7 @@ export default function Landing() {
     {
       question: "How accurate is the AI recognition?",
       answer:
-        "Our AI achieves over 95% accuracy on standard mathematical expressions. For best results, draw clearly and give each symbol enough space.",
+        "Our AI achieves over 80% accuracy on standard mathematical expressions. For best results, draw clearly and give each symbol enough space.",
     },
   ];
 
@@ -476,12 +476,6 @@ export default function Landing() {
                 How It Works
               </button>
               <button
-                onClick={() => scrollToSection("demo")}
-                className="text-[hsl(30,10%,40%)] hover:text-[hsl(24,75%,50%)] transition-colors font-medium"
-              >
-                Try Demo
-              </button>
-              <button
                 onClick={() => scrollToSection("faq")}
                 className="text-[hsl(30,10%,40%)] hover:text-[hsl(24,75%,50%)] transition-colors font-medium"
               >
@@ -531,12 +525,6 @@ export default function Landing() {
                 How It Works
               </button>
               <button
-                onClick={() => scrollToSection("demo")}
-                className="text-left py-2 text-[hsl(30,10%,40%)] hover:text-[hsl(24,75%,50%)] font-medium"
-              >
-                Try Demo
-              </button>
-              <button
                 onClick={() => scrollToSection("faq")}
                 className="text-left py-2 text-[hsl(30,10%,40%)] hover:text-[hsl(24,75%,50%)] font-medium"
               >
@@ -569,10 +557,10 @@ export default function Landing() {
                 <Users className="w-4 h-4 text-[hsl(24,75%,50%)]" />
                 <span className="text-sm text-[hsl(30,10%,45%)]">
                   Loved by{" "}
-                  <span className="font-semibold text-[hsl(30,10%,25%)]">
-                    10,000+
-                  </span>{" "}
-                  students & educators
+                  {/* <span className="font-semibold text-[hsl(30,10%,25%)]">
+                    100+
+                  </span>{" "} */}
+                  Students & Educators
                 </span>
               </div>
 
@@ -624,14 +612,14 @@ export default function Landing() {
                   ))}
                 </div>
                 <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
+                  {[...Array(4)].map((_, i) => (
                     <Star
                       key={i}
                       className="w-4 h-4 fill-[hsl(45,90%,55%)] text-[hsl(45,90%,55%)]"
                     />
                   ))}
                   <span className="text-sm text-[hsl(30,10%,45%)] ml-1">
-                    4.9/5 rating
+                    4/5 rating
                   </span>
                 </div>
               </div>
@@ -652,7 +640,7 @@ export default function Landing() {
                   <div>
                     <p className="text-xs text-[hsl(30,10%,55%)]">Accuracy</p>
                     <p className="text-sm font-bold text-[hsl(30,10%,20%)]">
-                      95%+
+                      80%+
                     </p>
                   </div>
                 </div>
@@ -780,7 +768,10 @@ export default function Landing() {
         </div>
       </section>
 
-
+      {/* Hand-drawn divider */}
+      <div className="max-w-4xl mx-auto px-4">
+        <div className="hand-drawn-line" />
+      </div>
 
       {/* ============================================
           TESTIMONIALS SECTION
@@ -851,15 +842,6 @@ export default function Landing() {
               />
             ))}
           </div>
-
-          {/* Contact CTA */}
-          <div className="text-center mt-8">
-            <p className="text-[hsl(30,10%,45%)] mb-3">Still have questions?</p>
-            <button className="inline-flex items-center gap-2 text-[hsl(24,75%,50%)] font-medium hover:underline">
-              <MessageCircle className="w-4 h-4" />
-              Contact Support
-            </button>
-          </div>
         </div>
       </section>
 
@@ -913,14 +895,21 @@ export default function Landing() {
               </p>
               <div className="flex gap-4">
                 <a
-                  href="#"
+                  href="https://www.instagram.com/srixdev/"
                   className="w-10 h-10 rounded-lg bg-[hsl(40,30%,97%)] border border-[hsl(30,15%,85%)] flex items-center justify-center text-[hsl(30,10%,45%)] hover:text-[hsl(24,75%,50%)] hover:border-[hsl(24,75%,50%)] transition-colors"
-                  aria-label="Twitter"
+                  aria-label="Instagram"
                 >
-                  <Twitter className="w-4 h-4" />
+                  <Instagram className="w-4 h-4" />
                 </a>
                 <a
-                  href="#"
+                  href="https://www.twitch.tv/sridineshh"
+                  className="w-10 h-10 rounded-lg bg-[hsl(40,30%,97%)] border border-[hsl(30,15%,85%)] flex items-center justify-center text-[hsl(30,10%,45%)] hover:text-[hsl(24,75%,50%)] hover:border-[hsl(24,75%,50%)] transition-colors"
+                  aria-label="Twitch"
+                >
+                  <Twitch className="w-4 h-4" />
+                </a>
+                <a
+                  href="https://github.com/Sri-dinesh/CogniSketch"
                   className="w-10 h-10 rounded-lg bg-[hsl(40,30%,97%)] border border-[hsl(30,15%,85%)] flex items-center justify-center text-[hsl(30,10%,45%)] hover:text-[hsl(24,75%,50%)] hover:border-[hsl(24,75%,50%)] transition-colors"
                   aria-label="GitHub"
                 >
